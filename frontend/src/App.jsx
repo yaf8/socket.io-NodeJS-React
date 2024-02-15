@@ -8,6 +8,14 @@ function App() {
     const [input, setInput] = useState('');
 
     useEffect(() => {
+        // Listen for messages from the server
+        socket.on('chat message', (message) => {
+            const receiveTime = Date.now(); // Current time when the client receives the message
+            const millisecondsTaken = receiveTime - message.sendTime;
+            console.log('Message from server:', message.message);
+            console.log('Milliseconds taken:', millisecondsTaken);
+        });
+
         // Clean up the socket connection when the component unmounts
         return () => {
             socket.disconnect();
@@ -15,14 +23,14 @@ function App() {
     }, []); // Run effect only once
 
     const sendMessage = () => {
-      console.log('input', input)
-        // Send a message to the server
-        socket.emit('chat message', input);
+        // Send a message to the server along with the timestamp
+        const sendTime = Date.now();
+        socket.emit('chat message', { message: input, sendTime });
         setInput('');
     };
 
     return (
-        <div style={{display: 'flex', flexDirection: 'column', justifyContent: "center", width: "100%", height: "100%", gap: "10px"}}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: "center", width: "100%", height: "100%", gap: "10px" }}>
             <textarea
                 type="text"
                 value={input}

@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
 
     // Handle events when a user sends a message
     socket.on('chat message', (message) => {
-        console.log('Message from client:', message);
+        console.log('Message from client:', message.message);
         // Broadcast the message to all connected clients
         io.emit('chat message', message);
     });
