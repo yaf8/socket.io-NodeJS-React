@@ -1,8 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const socketIO = require('socket.io');
-const cors = require("cors")
+const cors = require("cors");
 
 const app = express();
 const server = http.createServer(app);
@@ -18,7 +17,7 @@ app.use(cors({
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE']
-}))
+}));
 
 io.on('connection', (socket) => {
     console.log('A user connected');
@@ -34,11 +33,16 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
+
+    // Prevent immediate disconnection by handling ping timeout
+    socket.on('ping', () => {
+        socket.emit('pong');
+    });
 });
 
 app.get("/", (req, res) => {
     res.send("<h1>Server is running</h1>");
-  });
+});
 
 const port = process.env.PORT || 3001;
 
