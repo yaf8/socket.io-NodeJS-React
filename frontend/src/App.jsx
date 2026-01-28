@@ -12,7 +12,7 @@ function App() {
     useEffect(() => {
         // 2. Initialize the socket INSIDE the useEffect
         // This ensures a new connection is made for every mount cycle
-        socketRef.current = io('http://localhost:3001');
+        socketRef.current = io('http://192.168.1.5:3001');
 
         // Listen for messages
         socketRef.current.on('chat message', (message) => {

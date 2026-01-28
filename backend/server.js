@@ -8,6 +8,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",
+    credentials: true,
+    optionsSuccessStatus: 200,
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
@@ -59,6 +61,6 @@ app.get("/", (req, res) => {
 
 const port = process.env.PORT || 3001;
 
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Server is running on http://192.168.1.6:${port}`);
 });
