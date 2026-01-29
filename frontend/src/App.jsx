@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import VideoChat from './VideoChat.jsx';
 
 function App() {
     const [input, setInput] = useState('');
@@ -76,6 +77,7 @@ function App() {
                 style={{ border: '1px solid black' }}
                 onMouseMove={handleMouseMove}
             />
+            <VideoChat />
         </div>
     );
 }
