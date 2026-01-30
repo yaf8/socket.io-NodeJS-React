@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
-const socket = io('http://192.168.1.5:3001'); // USE YOUR IP
+const socket = io('http://localhost:3001'); // USE YOUR IP
 
 function VideoChat() {
     const localVideoRef = useRef();

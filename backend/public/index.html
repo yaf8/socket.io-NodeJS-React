@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.io + HTMX Stream</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; }
+        #display-area { width: 400px; height: 300px; margin: 20px auto; background: #000; border: 5px solid #333; }
+        video, canvas { display: none; }
+        button { padding: 15px; font-size: 1.1rem; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Socket.io + HTMX Realtime Feed</h1>
+
+    <div id="display-area">
+        <div id="video-feed">Waiting for stream...</div>
+    </div>
+
+    <button onclick="initStream()">Start Broadcasting</button>
+
+    <video id="v" autoplay playsinline></video>
+    <canvas id="c"></canvas>
+
+    <script>
+        const socket = io(); // Connects to the same host
+        const video = document.getElementById('v');
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const displayArea = document.getElementById('display-area');
+
+        // 1. RECEIVE: Listen for HTML from Socket.io and let HTMX handle it
+        socket.on("new-frame", (htmlContent) => {
+            // We use HTMX to swap the content manually
+            // This allows you to use HTMX features like transitions or OOB swaps
+            htmx.swap("#video-feed", htmlContent, { swapStyle: "outerHTML" });
+        });
+
+        // 2. SEND: Capture camera and emit to server
+        async function initStream() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                canvas.width = 320;
+                canvas.height = 240;
+
+                setInterval(() => {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const base64Image = canvas.toDataURL('image/jpeg', 0.4); // Compressing for speed
+                    socket.emit("stream-frame", base64Image);
+                }, 100); // 10 FPS
+            } catch (err) {
+                console.error("Camera error:", err);
+                alert("Please enable camera access and ensure you are on a Secure Context (HTTPS or Localhost/Chrome Flags).");
+            }
+        }
+    </script>
+</body>
+</html>
