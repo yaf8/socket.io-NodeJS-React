@@ -34,21 +34,23 @@ io.on("connection", (socket) => {
   socket.on("chat message", (data) => {
     console.clear();
     console.log("Message from client ", socket.id, " :", data.message);
-    // We create the HTML for the log line
-    // The 'id' isn't needed on the tag itself anymore since we'll target the parent
+
+    // Update global variable
+    messRes = data.message;
+
+    // Create HTML for the server terminal
     const timestamp = new Date().toLocaleTimeString().split(' ')[0];
     const htmlSnippet = `
-        <div class="log-entry" style="margin-bottom: 8px; border-left: 2px solid #0f0; padding-left: 10px;">
+        <div class="log-entry" style="margin-bottom: 8px; border-left: 2px solid #0f0; padding-left: 10px; animation: fadeIn 0.3s ease;">
             <span style="color: #555;">[${timestamp}]</span> 
             <strong style="color: #0f0;"> USER:</strong> 
-            <span>${data.message}</span>
+            <span style="color: #fff;">${data.message}</span>
         </div>`;
 
-    messRes = data.message;
-    // Broadcast the message to all connected clients
+    // 1. Broadcast raw data to React Clients
     io.emit("chat message", data);
 
-    // Broadcast the raw HTML string
+    // 2. Broadcast HTML to HTMX Server View
     io.emit("new-content", htmlSnippet);
   });
 
@@ -99,7 +101,8 @@ io.on("connection", (socket) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("<h1>Server is running </h1>" + (messRes.y ? messRes.x + " " + messRes.y : messRes));
+  res.send("<h1>Server is running </h1><p>Last Message: " + (typeof messRes === 'object' ? JSON.stringify(messRes) : messRes) + "</p>");
+  // res.send("<h1>Server is running </h1>" + (messRes.y ? messRes.x + " " + messRes.y : messRes));
 });
 
 const port = process.env.PORT || 3001;

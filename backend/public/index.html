@@ -17,6 +17,7 @@
             padding: 20px;
             height: 100vh;
             margin: 0;
+            box-sizing: border-box;
         }
         #console-window {
             width: 95%;
@@ -30,7 +31,12 @@
             box-shadow: inset 0 0 20px #000, 0 0 15px rgba(0, 255, 0, 0.1);
             position: relative;
         }
-        /* Custom Scrollbar for that Retro look */
+        /* Fade in effect for new messages */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         #console-window::-webkit-scrollbar { width: 8px; }
         #console-window::-webkit-scrollbar-track { background: #050505; }
         #console-window::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
@@ -45,7 +51,7 @@
             flex-grow: 1;
             background: #000;
             border: 1px solid #0f0;
-            color: #0f0;
+            color: #fff;
             padding: 15px;
             font-family: 'Courier New', monospace;
             font-size: 1.1rem;
@@ -75,7 +81,7 @@
     </div>
 
     <div class="input-area">
-        <input type="text" id="user-input" placeholder="Enter command or message..." autocomplete="off">
+        <input type="text" id="user-input" placeholder="Enter command..." autocomplete="off">
         <button onclick="sendMessage()">EXECUTE</button>
     </div>
 
@@ -84,27 +90,31 @@
         const input = document.getElementById('user-input');
         const logsContainer = document.getElementById('console-window');
         const chatLogs = document.getElementById('chat-logs');
-        const initialMsg = document.getElementById('initial-msg');
-
-        // 1. FIX: Use htmx.process to append content permanently
+        
+        // 1. RECEIVE DATA: This updates the HTML permanently
         socket.on("new-content", (htmlSnippet) => {
-            // Remove the "Waiting" message on the first actual message
+            // Remove initial message safely
+            const initialMsg = document.getElementById('initial-msg');
             if (initialMsg) initialMsg.remove();
 
-            // Use HTMX API to append the fragment to the #chat-logs div
-            // 'append' ensures it stays there forever
-            htmx.append(chatLogs, htmlSnippet);
+            // FIX: Standard JS way to insert HTML string at the bottom
+            chatLogs.insertAdjacentHTML('beforeend', htmlSnippet);
 
-            // Auto-scroll logic
+            // Optional: Process HTMX attributes in the new content (if you add hx- attributes later)
+            htmx.process(chatLogs.lastElementChild);
+
+            // Auto-scroll to bottom
             logsContainer.scrollTo({
                 top: logsContainer.scrollHeight,
                 behavior: 'smooth'
             });
         });
 
+        // 2. SEND DATA
         function sendMessage() {
             const msg = input.value;
             if (msg.trim() !== "") {
+                // Send object format to match server expectation
                 socket.emit("chat message", { message: msg });
                 input.value = "";
             }
