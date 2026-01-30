@@ -3,62 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.io + HTMX Stream</title>
+    <title>HTMX Realtime Console</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; }
-        #display-area { width: 400px; height: 300px; margin: 20px auto; background: #000; border: 5px solid #333; }
-        video, canvas { display: none; }
-        button { padding: 15px; font-size: 1.1rem; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            background: #000; 
+            color: #0f0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 20px;
+            height: 100vh;
+            margin: 0;
+        }
+        #console-window {
+            width: 95%;
+            max-width: 800px;
+            height: 70vh;
+            border: 2px solid #333;
+            background: #0a0a0a;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            box-shadow: inset 0 0 20px #000, 0 0 15px rgba(0, 255, 0, 0.1);
+            position: relative;
+        }
+        /* Custom Scrollbar for that Retro look */
+        #console-window::-webkit-scrollbar { width: 8px; }
+        #console-window::-webkit-scrollbar-track { background: #050505; }
+        #console-window::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+
+        .input-area {
+            width: 95%;
+            max-width: 800px;
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex-grow: 1;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            outline: none;
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 0 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover { background: #fff; }
+        #chat-logs { display: flex; flex-direction: column; }
     </style>
 </head>
 <body>
 
-    <h1>Socket.io + HTMX Realtime Feed</h1>
+    <h1 style="letter-spacing: 5px; text-shadow: 0 0 10px #0f0;">SYSTEM TERMINAL</h1>
 
-    <div id="display-area">
-        <div id="video-feed">Waiting for stream...</div>
+    <div id="console-window">
+        <div id="chat-logs">
+            <p id="initial-msg" style="color: #444;">-- System Initialized. Waiting for incoming data... --</p>
+        </div>
     </div>
 
-    <button onclick="initStream()">Start Broadcasting</button>
-
-    <video id="v" autoplay playsinline></video>
-    <canvas id="c"></canvas>
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Enter command or message..." autocomplete="off">
+        <button onclick="sendMessage()">EXECUTE</button>
+    </div>
 
     <script>
-        const socket = io(); // Connects to the same host
-        const video = document.getElementById('v');
-        const canvas = document.getElementById('c');
-        const ctx = canvas.getContext('2d');
-        const displayArea = document.getElementById('display-area');
+        const socket = io();
+        const input = document.getElementById('user-input');
+        const logsContainer = document.getElementById('console-window');
+        const chatLogs = document.getElementById('chat-logs');
+        const initialMsg = document.getElementById('initial-msg');
 
-        // 1. RECEIVE: Listen for HTML from Socket.io and let HTMX handle it
-        socket.on("new-frame", (htmlContent) => {
-            // We use HTMX to swap the content manually
-            // This allows you to use HTMX features like transitions or OOB swaps
-            htmx.swap("#video-feed", htmlContent, { swapStyle: "outerHTML" });
+        // 1. FIX: Use htmx.process to append content permanently
+        socket.on("new-content", (htmlSnippet) => {
+            // Remove the "Waiting" message on the first actual message
+            if (initialMsg) initialMsg.remove();
+
+            // Use HTMX API to append the fragment to the #chat-logs div
+            // 'append' ensures it stays there forever
+            htmx.append(chatLogs, htmlSnippet);
+
+            // Auto-scroll logic
+            logsContainer.scrollTo({
+                top: logsContainer.scrollHeight,
+                behavior: 'smooth'
+            });
         });
 
-        // 2. SEND: Capture camera and emit to server
-        async function initStream() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                
-                canvas.width = 320;
-                canvas.height = 240;
-
-                setInterval(() => {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const base64Image = canvas.toDataURL('image/jpeg', 0.4); // Compressing for speed
-                    socket.emit("stream-frame", base64Image);
-                }, 100); // 10 FPS
-            } catch (err) {
-                console.error("Camera error:", err);
-                alert("Please enable camera access and ensure you are on a Secure Context (HTTPS or Localhost/Chrome Flags).");
+        function sendMessage() {
+            const msg = input.value;
+            if (msg.trim() !== "") {
+                socket.emit("chat message", { message: msg });
+                input.value = "";
             }
         }
+
+        // Handle 'Enter' key
+        input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
     </script>
 </body>
 </html>

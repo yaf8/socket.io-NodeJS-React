@@ -31,21 +31,25 @@ let messRes = "";
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
-  // Handle events when a user sends a message
- socket.on("chat message", (data) => {
-    console.log("Received:", data.message);
+  socket.on("chat message", (data) => {
+    console.clear();
+    console.log("Message from client ", socket.id, " :", data.message);
+    // We create the HTML for the log line
+    // The 'id' isn't needed on the tag itself anymore since we'll target the parent
+    const timestamp = new Date().toLocaleTimeString().split(' ')[0];
+    const htmlSnippet = `
+        <div class="log-entry" style="margin-bottom: 8px; border-left: 2px solid #0f0; padding-left: 10px;">
+            <span style="color: #555;">[${timestamp}]</span> 
+            <strong style="color: #0f0;"> USER:</strong> 
+            <span>${data.message}</span>
+        </div>`;
 
-    // 1. Create an HTML snippet for the new message
-    // We use hx-swap-oob="true" to tell HTMX to "append" it to the list
-    const messageHtml = `
-      <div hx-swap-oob="beforeend:#chat-logs">
-        <p style="margin: 5px 0; border-bottom: 1px solid #444;">
-          <strong style="color: #00ff00;">></strong> ${data.message}
-        </p>
-      </div>`;
+    messRes = data.message;
+    // Broadcast the message to all connected clients
+    io.emit("chat message", data);
 
-    // 2. Broadcast the HTML to everyone
-    io.emit("new-content", messageHtml);
+    // Broadcast the raw HTML string
+    io.emit("new-content", htmlSnippet);
   });
 
   socket.on("canvas hover change", (message) => {
@@ -78,7 +82,7 @@ io.on("connection", (socket) => {
     // Wrap the image in an HTML tag that HTMX understands
     // We use hx-swap-oob="true" if we want to target a specific ID anywhere
     const htmlSnippet = `<img id="video-feed" src="${data}" style="width:100%; border:2px solid green;" />`;
-    
+
     // Broadcast the HTML string to everyone
     io.emit("new-frame", htmlSnippet);
   });
